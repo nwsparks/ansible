@@ -1,23 +1,13 @@
 #!powershell
-# This file is part of Ansible
-#
-# Copyright 2015, Hans-Joachim Kliemeck <git@kliemeck.de>
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
-# WANT_JSON
-# POWERSHELL_COMMON
+# Copyright: (c) 2017, Noah Sparks <nsparks@outlook.com>
+# Copyright: (c) 2015, Hans-Joachim Kliemeck <git@kliemeck.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+#Requires -Module Ansible.ModuleUtils.Legacy.psm1
+#Requires -Module Ansible.ModuleUtils.SID.psm1
+
+
 
 $params = Parse-Args $args -supports_check_mode $true
 $check_mode = Get-AnsibleParam -obj $params -name "_ansible_check_mode" -default $false
@@ -30,10 +20,6 @@ $path = Get-AnsibleParam -obj $params "path" -type "path" -failifempty $true
 $state = Get-AnsibleParam -obj $params "state" -type "str" -default "absent" -validateSet "present","absent" -resultobj $result
 $reorganize = Get-AnsibleParam -obj $params "reorganize" -type "bool" -default $false -resultobj $result
 
-If (-Not (Test-Path -Path $path)) {
-    Fail-Json $result "$path file or directory does not exist on the host"
-}
- 
 Try {
     $objACL = Get-ACL -Path $path
     # AreAccessRulesProtected - $false if inheritance is set ,$true if inheritance is not set

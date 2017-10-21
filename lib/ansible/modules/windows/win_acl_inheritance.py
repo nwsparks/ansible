@@ -1,25 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2015, Hans-Joachim Kliemeck <git@kliemeck.de>
-#
-# This file is part of Ansible
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
-
-# this is a windows documentation stub.  actual code lives in the .ps1
-# file of the same name
+# Copyright: (c) 2017, Noah Sparks <nsparks@outlook.com>
+# Copyright: (c) 2015, Hans-Joachim Kliemeck <git@kliemeck.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
@@ -40,7 +24,7 @@ options:
     required: true
   state:
     description:
-      - Specify whether to enable I(present) or disable I(absent) ACL inheritance
+      - Specify whether to enable C(present) or disable C(absent) ACL inheritance
     required: false
     choices:
       - present
@@ -48,31 +32,34 @@ options:
     default: absent
   reorganize:
     description:
-      - For P(state) = I(absent), indicates if the inherited ACE's should be copied from the parent directory. This is necessary
-        (in combination with removal) for a simple ACL instead of using multiple ACE deny entries.
-      - For P(state) = I(present), indicates if the inherited ACE's should be deduplicated compared to the parent directory. This removes complexity
-        of the ACL structure.
+      - For I(state) = C(absent), setting I(reorganize) = C(True) will convert inherited permissions to explicit permissions on the object.
+      - For I(state) = C(absent), setting I(reorganize) = C(False) will NOT convert inheritied permissions.
+      - For I(state) = C(present), setting I(reorganize) = C(True) will cause explicit permissions that match inherited permissions to be removed.
+        This simplifies the ACL list on the object by removing duplicate objects.
+      - For I(state) = C(present), setting I(reorganize) = C(False) will enable inheritance of permissions and leave explicit permissions intact.
     required: false
     choices:
       - no
       - yes
-    default: no
-author: Hans-Joachim Kliemeck (@h0nIg)
+    default: false
+author:
+ - Hans-Joachim Kliemeck (@h0nIg)
+ - Noah Sparks (@nwsparks)
 '''
 
 EXAMPLES = r'''
-- name: Disable inherited ACE's
+- name: Disable inherited ACE's and remove them
   win_acl_inheritance:
     path: C:\apache
     state: absent
 
-- name: Disable and copy inherited ACE's
+- name: Disable and convert inherited ACE's to explicit ACE's
   win_acl_inheritance:
     path: C:\apache
     state: absent
     reorganize: True
 
-- name: Enable and remove dedicated ACE's
+- name: Enable and remove dedicated ACE's which are duplicates of inherited ACE's
   win_acl_inheritance:
     path: C:\apache
     state: present

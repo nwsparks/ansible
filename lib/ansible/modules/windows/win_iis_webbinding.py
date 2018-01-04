@@ -42,8 +42,7 @@ options:
   host_header:
     description:
       - The host header to bind to / use for the new site.
-      - For state absent, you can use c('*') here to remove all bindings for a particular
-        protocol/ip/port combination.
+      - If you are creating/removing a catch-all binding, omit this parameter rather than defining it as '*'.
   protocol:
     description:
       - The protocol to be used for the Web binding (usually HTTP, HTTPS, or FTP).

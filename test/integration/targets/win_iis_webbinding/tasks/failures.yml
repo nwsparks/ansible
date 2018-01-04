@@ -13,6 +13,16 @@
     - failure.msg != "You cannot specify host headers with SSL unless it is a wildcard certificate."
     - failure.msg != "You cannot specify host headers with SSL unless it is a wildcard certificate or SNI is enabled."
 
+- name: failure check define * for host header
+  win_iis_webbinding:
+    name: "{{ test_iis_site_name }}"
+    state: present
+    host_header: '*'
+    protocol: http
+    ip: '*'
+  register: failure
+  failed_when: failure.msg != "To make or remove a catch-all binding, please omit the host_header parameter entirely rather than specify host_header *"
+
 - debug:
     var: failure
     verbosity: 1

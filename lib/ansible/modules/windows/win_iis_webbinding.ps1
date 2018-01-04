@@ -3,7 +3,6 @@
 # Copyright: (c) 2017, Noah Sparks <nsparks@outlook.com>
 # Copyright: (c) 2015, Henrik Wallström <henrik@wallstroms.nu>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-
 #Requires -Module Ansible.ModuleUtils.Legacy
 
 $params = Parse-Args -arguments $args -supports_check_mode $true
@@ -52,42 +51,36 @@ function Create-BindingInfo {
 }
 
 # Used instead of get-webbinding to ensure we always return a single binding
+# We can't filter properly with get-webbinding...ex get-webbinding ip * returns all bindings
 # pass it $binding_parameters hashtable
 function Get-SingleWebBinding {
-    $bind_search_splat = @{
-        'name' = $args[0].name
-        'protocol' = $args[0].protocol
-        'port' = $args[0].port
-        'ip' = $args[0].ip
-        'hostheader' = $args[0].hostheader
+
+    Try {
+        $site_bindings = get-webbinding -name $args[0].name
+    }
+    Catch {
+        # 2k8r2 throws this error when you run get-webbinding with no bindings in iis
+        If (-not $_.Exception.Message.CompareTo('Cannot process argument because the value of argument "obj" is null. Change the value of argument "obj" to a non-null value'))
+        {
+            Throw $_.Exception.Message
+        }
+        Else { return }
     }
 
-    # if no bindings exist, get-webbinding fails with an error that can't be ignored via error actions on older systems
-    # let's ignore that specific error
-    If (-not $bind_search_splat['hostheader'])
+    Foreach ($binding in $site_bindings)
     {
-        Try {
-            Get-WebBinding @bind_search_splat | Where-Object {$_.BindingInformation.Split(':')[-1] -eq [string]::Empty}
+        $splits = $binding.bindingInformation -split ':'
+
+        if (
+            $args[0].protocol -eq $binding.protocol -and
+            $args[0].ipaddress -eq $splits[0] -and
+            $args[0].port -eq $splits[1] -and
+            $args[0].hostheader -eq $splits[2]
+        )
+        {
+            Return $binding
         }
-        Catch {
-            If (-not $_.Exception.Message.CompareTo('Cannot process argument because the value of argument "obj" is null. Change the value of argument "obj" to a non-null value'))
-            {
-                Throw $_.Exception.Message
-            }
-        }
-    }
-    Else
-    {
-        Try {
-            Get-WebBinding @bind_search_splat
-        }
-        Catch {
-            If (-not $_.Exception.Message.CompareTo('Cannot process argument because the value of argument "obj" is null. Change the value of argument "obj" to a non-null value'))
-            {
-                Throw $_.Exception.Message
-            }
-        }
-    }
+    }       
 }
 
 Function Get-CertificateSubjects {
@@ -127,8 +120,6 @@ Param (
         }
     }
 }
-
-
 
 #############################
 ### Pre-Action Validation ###
@@ -237,9 +228,9 @@ If ($sslFlags -gt 1 -and ($certificateHash -ne [string]::Empty -or $certificateS
 }
 
 # make sure host_header: '*' only present when state: absent
-If ($host_header -match '^\*$' -and $state -ne 'absent')
+If ($host_header -eq '*')
 {
-    Fail-Json -obj $result -message "host_header: '*' can only be used in combinaiton with state: absent"
+    Fail-Json -obj $result -message "To make or remove a catch-all binding, please omit the host_header parameter entirely rather than specify host_header *"
 }
 
 ##########################
@@ -259,6 +250,10 @@ If ($host_header)
 {
     $binding_parameters.HostHeader = $host_header
 }
+Else
+{
+    $binding_parameters.HostHeader = [string]::Empty
+}
 
 # Get bindings matching parameters
 Try {
@@ -274,7 +269,6 @@ Catch {
 If ($current_bindings -and $state -eq 'absent')
 {
     Try {
-        # will remove multiple objects in the case of * host header
         $current_bindings | Remove-WebBinding -WhatIf:$check_mode
         $result.changed = $true
     }

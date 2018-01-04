@@ -35,7 +35,6 @@
     state: absent
     protocol: "{{ item.protocol }}"
     port: "{{ item.port }}"
-    host_header: '*'
   with_items:
     - {protocol: http, port: 80}
     - {protocol: https, port: 443}

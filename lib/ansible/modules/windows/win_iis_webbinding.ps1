@@ -80,7 +80,7 @@ function Get-SingleWebBinding {
         {
             Return $binding
         }
-    }       
+    }
 }
 
 

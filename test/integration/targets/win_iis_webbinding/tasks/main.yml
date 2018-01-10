@@ -18,16 +18,16 @@
   - include_tasks: failures.yml
 
   always:
-  - name: get all websites from server
-    raw: powershell.exe "(get-website).name"
-    register: existing_sites
-
-  - name: ensure all sites are removed for clean testing
-    win_iis_website:
-      name: "{{ item }}"
-      state: absent
-    with_items:
-      - "{{ existing_sites.stdout_lines }}"
+#  - name: get all websites from server
+#    raw: powershell.exe "(get-website).name"
+#    register: existing_sites
+#
+#  - name: ensure all sites are removed for clean testing
+#    win_iis_website:
+#      name: "{{ item }}"
+#      state: absent
+#    with_items:
+#      - "{{ existing_sites.stdout_lines }}"
 
   - name: cleanup certreq files
     win_file:
@@ -48,15 +48,15 @@
       - "{{ thumbprint2.stdout_lines[0] }}"
       - "{{ thumbprint_wc.stdout_lines[0] }}"
 
-  - name: remove IIS features after test
-    win_feature:
-      name: Web-Server
-      state: absent
-      includ_sub_features: True
-      include_management_tools: True
-    register: feature_uninstall
-
-  - name: reboot after feature install
-    win_reboot:
-    when: feature_uninstall.reboot_required
+#  - name: remove IIS features after test
+#    win_feature:
+#      name: Web-Server
+#      state: absent
+#      includ_sub_features: True
+#      include_management_tools: True
+#    register: feature_uninstall
+#
+#  - name: reboot after feature install
+#    win_reboot:
+#    when: feature_uninstall.reboot_required
   when: os_version.stdout_lines[0]  is version('6.1','gt')

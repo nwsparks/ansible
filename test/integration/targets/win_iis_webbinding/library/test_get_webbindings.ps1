@@ -50,38 +50,31 @@ function Create-BindingInfo {
 # Used instead of get-webbinding to ensure we always return a single binding
 # pass it $binding_parameters hashtable
 function Get-SingleWebBinding {
-    $bind_search_splat = @{
-        'name' = $args[0].name
-        'protocol' = $args[0].protocol
-        'port' = $args[0].port
-        'ip' = $args[0].ip
-        'hostheader' = $args[0].hostheader
+
+    Try {
+        $site_bindings = get-webbinding -name $args[0].name
+    }
+    Catch {
+        # 2k8r2 throws this error when you run get-webbinding with no bindings in iis
+        If (-not $_.Exception.Message.CompareTo('Cannot process argument because the value of argument "obj" is null. Change the value of argument "obj" to a non-null value'))
+        {
+            Throw $_.Exception.Message
+        }
+        Else { return }
     }
 
-    # if no bindings exist, get-webbinding fails with an error that can't be ignored via error actions on older systems
-    # let's ignore that specific error
-    If (-not $bind_search_splat['hostheader'])
+    Foreach ($binding in $site_bindings)
     {
-        Try {
-            Get-WebBinding @bind_search_splat | Where-Object {$_.BindingInformation.Split(':')[-1] -eq [string]::Empty}
-        }
-        Catch {
-            If (-not $_.Exception.Message.CompareTo('Cannot process argument because the value of argument "obj" is null. Change the value of argument "obj" to a non-null value'))
-            {
-                Throw $_.Exception.Message
-            }
-        }
-    }
-    Else
-    {
-        Try {
-            Get-WebBinding @bind_search_splat
-        }
-        Catch {
-            If (-not $_.Exception.Message.CompareTo('Cannot process argument because the value of argument "obj" is null. Change the value of argument "obj" to a non-null value'))
-            {
-                Throw $_.Exception.Message
-            }
+        $splits = $binding.bindingInformation -split ':'
+
+        if (
+            $args[0].protocol -eq $binding.protocol -and
+            $args[0].ipaddress -eq $splits[0] -and
+            $args[0].port -eq $splits[1] -and
+            $args[0].hostheader -eq $splits[2]
+        )
+        {
+            Return $binding
         }
     }
 }
